@@ -2,10 +2,16 @@ from django import forms
 from .models import Ingredient, MenuItem, RecipeRequirement, Purchase
 
 class IngredientForm(forms.ModelForm):
-    pass
+    class Meta:
+        model = Ingredient
+        fields = "__all__"
 
 class MenuItemForm(forms.ModelForm):
-    pass
+    class Meta:
+        model = MenuItem
+        fields = "__all__"
 
 class RecipeRequirementForm(forms.ModelForm):
-    pass
+    class Meta:
+        model = RecipeRequirement
+        fields = "__all__"
