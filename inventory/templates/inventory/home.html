@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static %} 
 {% block title %}Django Delights{% endblock %}
 {% block content %}
     <div class="home">
         <div>
             <h2>Ingredients</h2>
-            <table>
+            <table class="inventory-table">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -15,7 +15,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                {% for ingredients in ingredients %}
+                {% for ingredient in ingredients %}
                     <tr>
                         <td>{{ ingredient.name }}</td>
                         <td>{{ ingredient.quantity }}</td>
@@ -26,7 +26,9 @@
                 </tbody>
             </table>
         </div>
+
         <hr/>
+
         <div>
             <h2>Purchases</h2>
             <table class="inventory-table">
@@ -48,7 +50,9 @@
                 </tbody>
             </table>
         </div>
+
         <hr/>
+
         <div>
             <h2>Menu</h2>
             <ul class="menu-items">

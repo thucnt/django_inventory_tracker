@@ -1,66 +1,72 @@
-from msilib.schema import ListView
+from django.shortcuts import redirect
 
-from django.contrib.auth import logout
+from django.db.models import Sum, F
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Sum
-from django.shortcuts import render, redirect
-from django.views.generic import TemplateView, CreateView, UpdateView
+from django.contrib.auth import logout
+from django.views.generic import TemplateView, ListView
+from django.views.generic.edit import CreateView, UpdateView
+from django.core.exceptions import SuspiciousOperation
 
-from myrestaurant.forms import IngredientForm, MenuItemForm, RecipeRequirementForm
-from myrestaurant.models import Ingredient, MenuItem, Purchase, RecipeRequirement
+from .models import Ingredient, MenuItem, Purchase, RecipeRequirement
+from .forms import IngredientForm, MenuItemForm, RecipeRequirementForm
 
 
-# Create your views here.
 class HomeView(LoginRequiredMixin, TemplateView):
-    template_name = "myrestaurant/home.html"
+    template_name = "inventory/home.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["ingredients"] = Ingredient.objects.all()
         context["menu_items"] = MenuItem.objects.all()
         context["purchases"] = Purchase.objects.all()
-
         return context
 
+
 class IngredientsView(LoginRequiredMixin, ListView):
-    template_name = "myrestaurant/ingredients_list.html"
+    template_name = "inventory/ingredients_list.html"
     model = Ingredient
+
 
 class NewIngredientView(LoginRequiredMixin, CreateView):
-    template_name = "myrestaurant/add_ingredient.html"
+    template_name = "inventory/add_ingredient.html"
     model = Ingredient
     form_class = IngredientForm
+
 
 class UpdateIngredientView(LoginRequiredMixin, UpdateView):
-    template_name = "myrestaurant/update_ingredient.html"
+    template_name = "inventory/update_ingredient.html"
     model = Ingredient
     form_class = IngredientForm
 
+
 class MenuView(LoginRequiredMixin, ListView):
-    template_name = "myrestaurant/menu_list.html"
+    template_name = "inventory/menu_list.html"
     model = MenuItem
 
+
 class NewMenuItemView(LoginRequiredMixin, CreateView):
-    template_name = "myrestaurant/add_menu_item.html"
+    template_name = "inventory/add_menu_item.html"
     model = MenuItem
     form_class = MenuItemForm
 
+
 class NewRecipeRequirementView(LoginRequiredMixin, CreateView):
-    template_name = "myrestaurant/add_recipe_requirement.html"
+    template_name = "inventory/add_recipe_requirement.html"
     model = RecipeRequirement
     form_class = RecipeRequirementForm
 
-class PurchaseView(LoginRequiredMixin, ListView):
-    template_name = "myrestaurant/purchase_list.html"
+
+class PurchasesView(LoginRequiredMixin, ListView):
+    template_name = "inventory/purchase_list.html"
     model = Purchase
 
+
 class NewPurchaseView(LoginRequiredMixin, TemplateView):
-    template_name = "myrestaurant/add_purchase.html"
+    template_name = "inventory/add_purchase.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["menu_items"] = [item for item in MenuItem.objects.all() if item.available()]
-
+        context["menu_items"] = [X for X in MenuItem.objects.all() if X.available()]
         return context
 
     def post(self, request):
@@ -70,32 +76,34 @@ class NewPurchaseView(LoginRequiredMixin, TemplateView):
         purchase = Purchase(menu_item=menu_item)
 
         for requirement in requirements.all():
-            requirement_ingredient = requirement.ingredient
-            requirement_ingredient.quantity -= requirement.quantity
-            requirement_ingredient.save()
-        purchase.save()
+            required_ingredient = requirement.ingredient
+            required_ingredient.quantity -= requirement.quantity
+            required_ingredient.save()
 
+        purchase.save()
         return redirect("/purchases")
 
+
 class ReportView(LoginRequiredMixin, TemplateView):
-    template_name = "myrestaurant/report.html"
+    template_name = "inventory/reports.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
+        context["purchases"] = Purchase.objects.all()
         revenue = Purchase.objects.aggregate(
             revenue=Sum("menu_item__price"))["revenue"]
         total_cost = 0
         for purchase in Purchase.objects.all():
-            for recipe in purchase.menu_item.reciperequirement_set.all():
-                total_cost += recipe.ingredient.price_per_unit * recipe.quantity
+            for recipe_requirement in purchase.menu_item.reciperequirement_set.all():
+                total_cost += recipe_requirement.ingredient.price_per_unit * \
+                    recipe_requirement.quantity
 
-        context["purchases"] = Purchase.objects.all()
         context["revenue"] = revenue
         context["total_cost"] = total_cost
         context["profit"] = revenue - total_cost
 
         return context
+
 
 def log_out(request):
     logout(request)
